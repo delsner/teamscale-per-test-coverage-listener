@@ -1,6 +1,6 @@
 # Teamscale Per-Test Coverage JUnit Test Listener
 
-A simple JUnit test listener that interacts with the Teamscale Jacoco Agent.
+A simple JUnit test listener that interacts with the Teamscale Jacoco Agent, all credits go to [CQSE/Teamscale](https://github.com/cqse/teamscale-jacoco-agent/tree/master/tia-client).
 
 ## Setup
 
