@@ -1,11 +1,15 @@
 package edu.tum.sse;
 
 import okhttp3.HttpUrl;
+import org.junit.platform.engine.TestExecutionResult;
+import org.junit.platform.engine.UniqueId;
+import org.junit.platform.launcher.TestExecutionListener;
+import org.junit.platform.launcher.TestIdentifier;
 import org.junit.runner.Description;
 import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunListener;
 
-public class TeamscalePerTestCoverageTestListener extends RunListener {
+public class TeamscalePerTestCoverageTestListener extends RunListener implements TestExecutionListener {
 
     private final TestRun testRun;
     private RunningTest runningTest;
@@ -25,6 +29,54 @@ public class TeamscalePerTestCoverageTestListener extends RunListener {
 
         TiaAgent agent = new TiaAgent(HttpUrl.get(agentUrl));
         testRun = agent.startTestRunWithoutTestSelection();
+    }
+
+    @Override
+    public void executionStarted(TestIdentifier testIdentifier) {
+        Description description = convertTestIdentifierToDescription(testIdentifier);
+        if (description != null) {
+            testStarted(description);
+        }
+    }
+
+    @Override
+    public void executionFinished(TestIdentifier testIdentifier, TestExecutionResult testExecutionResult) {
+        Description description = convertTestIdentifierToDescription(testIdentifier);
+        if (description != null) {
+            switch (testExecutionResult.getStatus()) {
+                case FAILED:
+                    testFailure(
+                            new Failure(description,
+                                    testExecutionResult
+                                            .getThrowable()
+                                            .orElseThrow(
+                                                    () -> new RunListenerConversionException("Failed to convert thrown exception for test failure."))
+                            ));
+                default:
+                    testFinished(description);
+            }
+        }
+    }
+
+    /**
+     * We must convert the JUnit5 {@link TestIdentifier} to a JUnit4-compatible description format {@link Description}.
+     * This method will return `null` in case the test identifier is neither a test suite nor a test method.
+     */
+    private Description convertTestIdentifierToDescription(TestIdentifier testIdentifier) {
+        // [engine:junit-vintage/jupiter] containers will not have a parent and are excluded
+        if (!testIdentifier.getParentId().isPresent()) {
+            return null;
+        }
+
+        if (testIdentifier.isTest()) {
+            String parentUniqueId = testIdentifier.getParentId().orElseThrow(() -> new RunListenerConversionException("Missing parentId in test identifier ." + testIdentifier));
+            UniqueId uniqueId = UniqueId.parse(parentUniqueId);
+            // get last segment which will be enclosing test suite (class)
+            String className = uniqueId.getSegments().get(uniqueId.getSegments().size() - 1).getValue();
+            return Description.createTestDescription(className, testIdentifier.getDisplayName(), testIdentifier.getUniqueId());
+        }
+        return Description.createSuiteDescription(testIdentifier.getDisplayName(), testIdentifier.getUniqueId());
+
     }
 
     /**
@@ -76,13 +128,7 @@ public class TeamscalePerTestCoverageTestListener extends RunListener {
 
     @Override
     public void testAssumptionFailure(Failure failure) {
-        handleErrors(() -> {
-            if (runningTest != null) {
-                runningTest.endTest(
-                        new TestRun.TestResultWithMessage(ETestExecutionResult.FAILURE, failure.getTrace()));
-                runningTest = null;
-            }
-        });
+        testFailure(failure);
     }
 
     @FunctionalInterface
@@ -95,6 +141,12 @@ public class TeamscalePerTestCoverageTestListener extends RunListener {
 
     private static class RunListenerConfigurationException extends RuntimeException {
         public RunListenerConfigurationException(String message) {
+            super(message);
+        }
+    }
+
+    private static class RunListenerConversionException extends RuntimeException {
+        public RunListenerConversionException(String message) {
             super(message);
         }
     }
