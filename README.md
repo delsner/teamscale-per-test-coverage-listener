@@ -17,6 +17,11 @@ Download the most [recent release of the Teamscale Jacoco Agent](https://github.
 ### Add JUnit test listener to Maven Surefire plugin
 
 ```xml
+<dependency>
+    <groupId>edu.tum.sse</groupId>
+    <artifactId>teamscale-per-test-coverage-listener</artifactId>
+    <version>1.0-SNAPSHOT</version>
+</dependency>
 <!-- ... -->
 <plugin>
     <groupId>org.apache.maven.plugins</groupId>
@@ -32,6 +37,39 @@ Download the most [recent release of the Teamscale Jacoco Agent](https://github.
     </configuration>
 </plugin>
 <!-- ... ->
+```
+
+You may want to add a dedicated Maven profile:
+
+```xml
+<profiles>
+    <profile>
+        <id>testwiseCoverage</id>
+        <build>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <configuration>
+                        <properties>
+                            <property>
+                                <name>listener</name>
+                                <value>edu.tum.sse.TeamscalePerTestCoverageTestListener</value>
+                            </property>
+                        </properties>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </build>
+        <dependencies>
+            <dependency>
+                <groupId>edu.tum.sse</groupId>
+                <artifactId>teamscale-per-test-coverage-listener</artifactId>
+                <version>1.0-SNAPSHOT</version>
+            </dependency>
+        </dependencies>
+    </profile>
+</profiles>
 ```
 
 ### Run the instrumented test suite
@@ -51,7 +89,7 @@ $ mvn clean test \
 Still in the root of your Maven project run:
 
 ```shell script
-$ JACOCO_AGENT_LOCATION/teamscale-jacoco-agent/bin/convert --testwise-coverage \
+$ JACOCO_AGENT_LOCATION/bin/convert --testwise-coverage \
   -i JACOCO_AGENT_LOCATION/coverage \ 
   -o JACOCO_AGENT_LOCATION/output \
   -c . 

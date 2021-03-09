@@ -11,6 +11,7 @@ public class TeamscalePerTestCoverageTestListener extends RunListener {
     private RunningTest runningTest;
 
     public TeamscalePerTestCoverageTestListener() {
+        System.out.println("Starting teamscale per-test coverage listener for new test...");
         String agentUrl = System.getProperty("tia.agent");
         if (agentUrl == null) {
             agentUrl = System.getenv("TIA_AGENT");
