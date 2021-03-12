@@ -89,8 +89,11 @@ $ mvn clean test \
 Still in the root of your Maven project run:
 
 ```shell script
-$ JACOCO_AGENT_LOCATION/bin/convert --testwise-coverage \
-  -i JACOCO_AGENT_LOCATION/coverage \ 
-  -o JACOCO_AGENT_LOCATION/output \
-  -c . 
+# Unix-like
+$ $JACOCO_AGENT_LOCATION/bin/convert --testwise-coverage \
+  -i $JACOCO_AGENT_LOCATION/coverage \ 
+  -o $JACOCO_AGENT_LOCATION/output \
+  -c .
+# Windows
+$ %JACOCO_AGENT_LOCATION%\bin\convert --testwise-coverage -i %JACOCO_AGENT_LOCATION%\coverage -o %JACOCO_AGENT_LOCATION%\output -c . 
 ```
