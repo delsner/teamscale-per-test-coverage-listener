@@ -2,7 +2,9 @@ package edu.tum.sse;
 
 import okhttp3.HttpUrl;
 import org.junit.platform.engine.TestExecutionResult;
-import org.junit.platform.engine.UniqueId;
+import org.junit.platform.engine.TestSource;
+import org.junit.platform.engine.support.descriptor.ClassSource;
+import org.junit.platform.engine.support.descriptor.MethodSource;
 import org.junit.platform.launcher.TestExecutionListener;
 import org.junit.platform.launcher.TestIdentifier;
 import org.junit.runner.Description;
@@ -68,15 +70,25 @@ public class TeamscalePerTestCoverageTestListener extends RunListener implements
             return null;
         }
 
+        TestSource source = testIdentifier.getSource().orElseThrow(() -> new RunListenerConversionException("Missing source in test identifier " + testIdentifier + "."));
+
+        // we only count containers as test suites that are classes
+        // parameterized test methods are excluded by returning null here
+        if (!(testIdentifier.isTest()) && !(source instanceof ClassSource)) {
+            return null;
+        }
+
+        // a test that does not have a method source is ignored
+        if (testIdentifier.isTest() && !(source instanceof MethodSource)) {
+            return null;
+        }
+
         if (testIdentifier.isTest()) {
-            String parentUniqueId = testIdentifier.getParentId().orElseThrow(() -> new RunListenerConversionException("Missing parentId in test identifier ." + testIdentifier));
-            UniqueId uniqueId = UniqueId.parse(parentUniqueId);
-            // get last segment which will be enclosing test suite (class)
-            String className = uniqueId.getSegments().get(uniqueId.getSegments().size() - 1).getValue();
+            MethodSource methodSource = (MethodSource) source;
+            String className = methodSource.getClassName();
             return Description.createTestDescription(className, testIdentifier.getDisplayName(), testIdentifier.getUniqueId());
         }
         return Description.createSuiteDescription(testIdentifier.getDisplayName(), testIdentifier.getUniqueId());
-
     }
 
     /**
