@@ -70,7 +70,10 @@ public class TeamscalePerTestCoverageTestListener extends RunListener implements
             return null;
         }
 
-        TestSource source = testIdentifier.getSource().orElseThrow(() -> new RunListenerConversionException("Missing source in test identifier " + testIdentifier + "."));
+        if (!testIdentifier.getSource().isPresent()) {
+            return null;
+        }
+        TestSource source = testIdentifier.getSource().get();
 
         // we only count containers as test suites that are classes
         // parameterized test methods are excluded by returning null here
